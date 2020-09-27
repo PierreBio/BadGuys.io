@@ -82476,6 +82476,283 @@ if ( typeof __THREE_DEVTOOLS__ !== 'undefined' ) {
 
 /***/ }),
 
+/***/ "./node_modules/three/examples/jsm/controls/DragControls.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/three/examples/jsm/controls/DragControls.js ***!
+  \******************************************************************/
+/*! exports provided: DragControls */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DragControls", function() { return DragControls; });
+/* harmony import */ var _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../build/three.module.js */ "./node_modules/three/build/three.module.js");
+
+
+var DragControls = function ( _objects, _camera, _domElement ) {
+
+	var _plane = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Plane"]();
+	var _raycaster = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Raycaster"]();
+
+	var _mouse = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Vector2"]();
+	var _offset = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Vector3"]();
+	var _intersection = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Vector3"]();
+	var _worldPosition = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Vector3"]();
+	var _inverseMatrix = new _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Matrix4"]();
+	var _intersections = [];
+
+	var _selected = null, _hovered = null;
+
+	//
+
+	var scope = this;
+
+	function activate() {
+
+		_domElement.addEventListener( 'mousemove', onDocumentMouseMove, false );
+		_domElement.addEventListener( 'mousedown', onDocumentMouseDown, false );
+		_domElement.addEventListener( 'mouseup', onDocumentMouseCancel, false );
+		_domElement.addEventListener( 'mouseleave', onDocumentMouseCancel, false );
+		_domElement.addEventListener( 'touchmove', onDocumentTouchMove, false );
+		_domElement.addEventListener( 'touchstart', onDocumentTouchStart, false );
+		_domElement.addEventListener( 'touchend', onDocumentTouchEnd, false );
+
+	}
+
+	function deactivate() {
+
+		_domElement.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+		_domElement.removeEventListener( 'mousedown', onDocumentMouseDown, false );
+		_domElement.removeEventListener( 'mouseup', onDocumentMouseCancel, false );
+		_domElement.removeEventListener( 'mouseleave', onDocumentMouseCancel, false );
+		_domElement.removeEventListener( 'touchmove', onDocumentTouchMove, false );
+		_domElement.removeEventListener( 'touchstart', onDocumentTouchStart, false );
+		_domElement.removeEventListener( 'touchend', onDocumentTouchEnd, false );
+
+		_domElement.style.cursor = '';
+
+	}
+
+	function dispose() {
+
+		deactivate();
+
+	}
+
+	function getObjects() {
+
+		return _objects;
+
+	}
+
+	function onDocumentMouseMove( event ) {
+
+		event.preventDefault();
+
+		var rect = _domElement.getBoundingClientRect();
+
+		_mouse.x = ( ( event.clientX - rect.left ) / rect.width ) * 2 - 1;
+		_mouse.y = - ( ( event.clientY - rect.top ) / rect.height ) * 2 + 1;
+
+		_raycaster.setFromCamera( _mouse, _camera );
+
+		if ( _selected && scope.enabled ) {
+
+			if ( _raycaster.ray.intersectPlane( _plane, _intersection ) ) {
+
+				_selected.position.copy( _intersection.sub( _offset ).applyMatrix4( _inverseMatrix ) );
+
+			}
+
+			scope.dispatchEvent( { type: 'drag', object: _selected } );
+
+			return;
+
+		}
+
+		_intersections.length = 0;
+
+		_raycaster.setFromCamera( _mouse, _camera );
+		_raycaster.intersectObjects( _objects, true, _intersections );
+
+		if ( _intersections.length > 0 ) {
+
+			var object = _intersections[ 0 ].object;
+
+			_plane.setFromNormalAndCoplanarPoint( _camera.getWorldDirection( _plane.normal ), _worldPosition.setFromMatrixPosition( object.matrixWorld ) );
+
+			if ( _hovered !== object ) {
+
+				scope.dispatchEvent( { type: 'hoveron', object: object } );
+
+				_domElement.style.cursor = 'pointer';
+				_hovered = object;
+
+			}
+
+		} else {
+
+			if ( _hovered !== null ) {
+
+				scope.dispatchEvent( { type: 'hoveroff', object: _hovered } );
+
+				_domElement.style.cursor = 'auto';
+				_hovered = null;
+
+			}
+
+		}
+
+	}
+
+	function onDocumentMouseDown( event ) {
+
+		event.preventDefault();
+
+		_intersections.length = 0;
+
+		_raycaster.setFromCamera( _mouse, _camera );
+		_raycaster.intersectObjects( _objects, true, _intersections );
+
+		if ( _intersections.length > 0 ) {
+
+			_selected = ( scope.transformGroup === true ) ? _objects[ 0 ] : _intersections[ 0 ].object;
+
+			if ( _raycaster.ray.intersectPlane( _plane, _intersection ) ) {
+
+				_inverseMatrix.getInverse( _selected.parent.matrixWorld );
+				_offset.copy( _intersection ).sub( _worldPosition.setFromMatrixPosition( _selected.matrixWorld ) );
+
+			}
+
+			_domElement.style.cursor = 'move';
+
+			scope.dispatchEvent( { type: 'dragstart', object: _selected } );
+
+		}
+
+
+	}
+
+	function onDocumentMouseCancel( event ) {
+
+		event.preventDefault();
+
+		if ( _selected ) {
+
+			scope.dispatchEvent( { type: 'dragend', object: _selected } );
+
+			_selected = null;
+
+		}
+
+		_domElement.style.cursor = _hovered ? 'pointer' : 'auto';
+
+	}
+
+	function onDocumentTouchMove( event ) {
+
+		event.preventDefault();
+		event = event.changedTouches[ 0 ];
+
+		var rect = _domElement.getBoundingClientRect();
+
+		_mouse.x = ( ( event.clientX - rect.left ) / rect.width ) * 2 - 1;
+		_mouse.y = - ( ( event.clientY - rect.top ) / rect.height ) * 2 + 1;
+
+		_raycaster.setFromCamera( _mouse, _camera );
+
+		if ( _selected && scope.enabled ) {
+
+			if ( _raycaster.ray.intersectPlane( _plane, _intersection ) ) {
+
+				_selected.position.copy( _intersection.sub( _offset ).applyMatrix4( _inverseMatrix ) );
+
+			}
+
+			scope.dispatchEvent( { type: 'drag', object: _selected } );
+
+			return;
+
+		}
+
+	}
+
+	function onDocumentTouchStart( event ) {
+
+		event.preventDefault();
+		event = event.changedTouches[ 0 ];
+
+		var rect = _domElement.getBoundingClientRect();
+
+		_mouse.x = ( ( event.clientX - rect.left ) / rect.width ) * 2 - 1;
+		_mouse.y = - ( ( event.clientY - rect.top ) / rect.height ) * 2 + 1;
+
+		_intersections.length = 0;
+
+		_raycaster.setFromCamera( _mouse, _camera );
+		 _raycaster.intersectObjects( _objects, true, _intersections );
+
+		if ( _intersections.length > 0 ) {
+
+			_selected = ( scope.transformGroup === true ) ? _objects[ 0 ] : _intersections[ 0 ].object;
+
+			_plane.setFromNormalAndCoplanarPoint( _camera.getWorldDirection( _plane.normal ), _worldPosition.setFromMatrixPosition( _selected.matrixWorld ) );
+
+			if ( _raycaster.ray.intersectPlane( _plane, _intersection ) ) {
+
+				_inverseMatrix.getInverse( _selected.parent.matrixWorld );
+				_offset.copy( _intersection ).sub( _worldPosition.setFromMatrixPosition( _selected.matrixWorld ) );
+
+			}
+
+			_domElement.style.cursor = 'move';
+
+			scope.dispatchEvent( { type: 'dragstart', object: _selected } );
+
+		}
+
+
+	}
+
+	function onDocumentTouchEnd( event ) {
+
+		event.preventDefault();
+
+		if ( _selected ) {
+
+			scope.dispatchEvent( { type: 'dragend', object: _selected } );
+
+			_selected = null;
+
+		}
+
+		_domElement.style.cursor = 'auto';
+
+	}
+
+	activate();
+
+	// API
+
+	this.enabled = true;
+	this.transformGroup = false;
+
+	this.activate = activate;
+	this.deactivate = deactivate;
+	this.dispose = dispose;
+	this.getObjects = getObjects;
+
+};
+
+DragControls.prototype = Object.create( _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["EventDispatcher"].prototype );
+DragControls.prototype.constructor = DragControls;
+
+
+
+
+/***/ }),
+
 /***/ "./node_modules/to-array/index.js":
 /*!****************************************!*\
   !*** ./node_modules/to-array/index.js ***!
@@ -82664,7 +82941,7 @@ module.exports = yeast;
 
 __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 
-__webpack_require__(/*! ./game */ "./resources/js/game.js");
+__webpack_require__(/*! ./selectBox */ "./resources/js/selectBox.js");
 
 /***/ }),
 
@@ -82702,66 +82979,138 @@ window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
 
 /***/ }),
 
-/***/ "./resources/js/game.js":
-/*!******************************!*\
-  !*** ./resources/js/game.js ***!
-  \******************************/
-/*! exports provided: default */
+/***/ "./resources/js/selectBox.js":
+/*!***********************************!*\
+  !*** ./resources/js/selectBox.js ***!
+  \***********************************/
+/*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var three__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+/* harmony import */ var three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! three/build/three.module.js */ "./node_modules/three/build/three.module.js");
+/* harmony import */ var three_examples_jsm_controls_DragControls_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! three/examples/jsm/controls/DragControls.js */ "./node_modules/three/examples/jsm/controls/DragControls.js");
 
 
+var container;
+var camera, scene, renderer;
+var controls, group;
+var objects = [];
+var enableSelection = false;
+var mouse = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Vector2"](),
+    raycaster = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Raycaster"]();
+init();
 
-var Game = /*#__PURE__*/function () {
-  function Game() {
-    _classCallCheck(this, Game);
+function init() {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  camera = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["PerspectiveCamera"](70, window.innerWidth / window.innerHeight, 1, 5000);
+  camera.position.z = 1000;
+  scene = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Scene"]();
+  scene.background = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Color"](0xf0f0f0);
+  scene.add(new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["AmbientLight"](0x505050));
+  var light = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["SpotLight"](0xffffff, 1.5);
+  light.position.set(0, 500, 2000);
+  light.angle = Math.PI / 9;
+  light.castShadow = true;
+  light.shadow.camera.near = 1000;
+  light.shadow.camera.far = 4000;
+  light.shadow.mapSize.width = 1024;
+  light.shadow.mapSize.height = 1024;
+  scene.add(light);
+  group = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Group"]();
+  scene.add(group);
+  var geometry = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["BoxBufferGeometry"](40, 40, 40);
 
-    this.scene = new three__WEBPACK_IMPORTED_MODULE_0__["Scene"]();
-    this.camera = new three__WEBPACK_IMPORTED_MODULE_0__["PerspectiveCamera"](75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.renderer = new three__WEBPACK_IMPORTED_MODULE_0__["WebGLRenderer"]();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(this.renderer.domElement);
-    var geometry = new three__WEBPACK_IMPORTED_MODULE_0__["BoxGeometry"](1, 1, 1);
-    var light = new three__WEBPACK_IMPORTED_MODULE_0__["DirectionalLight"](0xffffff);
-    light.position.set(0, 20, 10);
-    var ambient = new three__WEBPACK_IMPORTED_MODULE_0__["AmbientLight"](0x707070); // soft white light
-
-    var material = new three__WEBPACK_IMPORTED_MODULE_0__["MeshPhongMaterial"]({
-      color: 0xffaa00
-    });
-    this.cube = new three__WEBPACK_IMPORTED_MODULE_0__["Mesh"](geometry, material);
-    this.scene.add(this.cube);
-    this.scene.add(light);
-    this.scene.add(ambient);
-    this.camera.position.z = 3;
-    this.animate();
+  for (var i = 0; i < 200; i++) {
+    var object = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["Mesh"](geometry, new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["MeshLambertMaterial"]({
+      color: Math.random() * 0xffffff
+    }));
+    object.position.x = Math.random() * 1000 - 500;
+    object.position.y = Math.random() * 600 - 300;
+    object.position.z = Math.random() * 800 - 400;
+    object.rotation.x = Math.random() * 2 * Math.PI;
+    object.rotation.y = Math.random() * 2 * Math.PI;
+    object.rotation.z = Math.random() * 2 * Math.PI;
+    object.scale.x = Math.random() * 2 + 1;
+    object.scale.y = Math.random() * 2 + 1;
+    object.scale.z = Math.random() * 2 + 1;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    scene.add(object);
+    objects.push(object);
   }
 
-  _createClass(Game, [{
-    key: "animate",
-    value: function animate() {
-      var game = this;
-      requestAnimationFrame(function () {
-        game.animate();
-      });
-      this.cube.rotation.x += 0.01;
-      this.cube.rotation.y += 0.01;
-      this.renderer.render(this.scene, this.camera);
+  renderer = new three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["WebGLRenderer"]({
+    antialias: true
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = three_build_three_module_js__WEBPACK_IMPORTED_MODULE_0__["PCFShadowMap"];
+  container.appendChild(renderer.domElement);
+  controls = new three_examples_jsm_controls_DragControls_js__WEBPACK_IMPORTED_MODULE_1__["DragControls"]([].concat(objects), camera, renderer.domElement);
+  controls.addEventListener('drag', render);
+  window.addEventListener('resize', onWindowResize, false);
+  document.addEventListener('click', onClick, false);
+  window.addEventListener('keydown', onKeyDown, false);
+  window.addEventListener('keyup', onKeyUp, false);
+  render();
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  render();
+}
+
+function onKeyDown(event) {
+  enableSelection = event.keyCode === 16 ? true : false;
+}
+
+function onKeyUp() {
+  enableSelection = false;
+}
+
+function onClick(event) {
+  event.preventDefault();
+
+  if (enableSelection === true) {
+    var draggableObjects = controls.getObjects();
+    draggableObjects.length = 0;
+    mouse.x = event.clientX / window.innerWidth * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    var intersections = raycaster.intersectObjects(objects, true);
+
+    if (intersections.length > 0) {
+      var object = intersections[0].object;
+
+      if (group.children.includes(object) === true) {
+        object.material.emissive.set(0x000000);
+        scene.attach(object);
+      } else {
+        object.material.emissive.set(0xaaaaaa);
+        group.attach(object);
+      }
+
+      controls.transformGroup = true;
+      draggableObjects.push(group);
     }
-  }]);
 
-  return Game;
-}();
+    if (group.children.length === 0) {
+      controls.transformGroup = false;
+      draggableObjects.push.apply(draggableObjects, objects);
+    }
+  }
 
-/* harmony default export */ __webpack_exports__["default"] = (Game = new Game());
+  render();
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
 
 /***/ }),
 
